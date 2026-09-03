@@ -49,3 +49,95 @@ RENAME TABLE layoff_staging_clean TO layoff_staging2;
 select *
 from layoff_staging2;
 
+select company, sum(total_laid_off)
+from layoff_staging2
+group by company
+order by 2 desc;
+
+
+select min(`date`),max(`date`)
+from layoff_staging2;
+
+select industry, sum(total_laid_off)
+from layoff_staging2
+group by industry
+order by 2 desc;
+
+select *
+from layoff_staging2;
+
+
+SELECT year(`date`), SUM(total_laid_off)
+FROM layoff_staging2
+GROUP BY `date`
+ORDER BY 1 DESC;
+
+SELECT stage, SUM(total_laid_off)
+FROM layoff_staging2
+GROUP BY stage
+ORDER BY 1 DESC;
+
+SELECT company, SUM(percentage_laid_off)
+FROM layoff_staging2
+GROUP BY company
+ORDER BY 1 DESC;
+
+SELECT SUBSTRING(`date`, 6, 2) AS `month`, SUM(total_laid_off)
+FROM layoff_staging2
+where SUBSTRING(`date`, 6, 2) is not null
+GROUP BY `month`
+order by 1 asc
+;
+
+SELECT SUBSTRING(`date`, 1, 7) AS `month`, SUM(total_laid_off)
+FROM layoff_staging2
+where SUBSTRING(`date`, 1, 7) is not null
+GROUP BY `month`
+order by 1 asc
+;
+
+WITH rolling_total AS (
+    SELECT SUBSTRING(`date`, 1, 7) AS `month`, SUM(total_laid_off) AS total_off
+    FROM layoff_staging2
+    WHERE SUBSTRING(`date`, 1, 7) IS NOT NULL
+    GROUP BY `month`
+    ORDER BY 1 ASC
+)
+SELECT `month`, total_off,
+       SUM(total_off) OVER(ORDER BY `month`) AS rolling_total
+FROM rolling_total;
+
+SELECT company, year(`date`) ,SUM(total_laid_off)
+FROM layoff_staging2
+GROUP BY company, year(`date`)
+ORDER BY 3 desc
+;
+
+with Company_year (company, years, total_laid_off) as
+(
+SELECT company, year(`date`) ,SUM(total_laid_off)
+FROM layoff_staging2
+GROUP BY company, year(`date`)
+)
+select *
+from Company_year;
+
+-- who laid most people year 
+WITH Company_year (company, years, total_laid_off) AS
+(
+    SELECT company, YEAR(`date`), SUM(total_laid_off)
+    FROM layoff_staging2
+    GROUP BY company, YEAR(`date`)
+),
+Company_Year_Rank AS (
+    SELECT *, DENSE_RANK() OVER (PARTITION BY years ORDER BY total_laid_off DESC) AS Ranking
+    FROM Company_year
+    WHERE years IS NOT NULL
+)
+SELECT *
+FROM Company_Year_Rank
+WHERE Ranking <= 5;
+
+
+
+
